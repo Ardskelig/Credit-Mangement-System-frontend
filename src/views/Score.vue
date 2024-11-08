@@ -268,28 +268,6 @@ const student_data=ref([
     "student_name": "大数据1"
   }
 ])
-const tableData = ref([
-  {
-    "autumn_core_credits": 0.0,
-    "autumn_limited_credits": 0.0,
-    "autumn_required_credits": 59.0,
-    "culture_choose_credits": 5.5,
-    "culture_core_credits": 5.0,
-    "culture_total_credits": 11.5,
-    "elective_credits": 10.0,
-    "id": 108,
-    "innovation_credits": 3.0,
-    "international_credits": 1.0,
-    "major": "未命名专业",
-    "numerical_logic_credits": 3.0,
-    "outmajor_credits": 7.0,
-    "short_term_training_credits": 2.0,
-    "spring_core_credits": 0.0,
-    "spring_limited_credits": 4.0,
-    "spring_required_credits": 0.0,
-    "student_name": "大数据1"
-  },
-]);
 
 //数据转化处理函数
 // 定义一个处理函数，将 res.data 转换为所需格式
