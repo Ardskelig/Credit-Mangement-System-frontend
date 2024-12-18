@@ -69,7 +69,7 @@
                     :prop="type" 
                     :label="typeArr.find(item => item.value === type).label" 
                     width="120"
-                    :formatter="(row) => row[type].value" 
+                    :formatter="row => formatCell(row, type)"
                   />
                 </template>
               
@@ -141,20 +141,27 @@
               width="65%"
               destroy-on-close
             >
-            <div style="display: flex; justify-content: center; align-items: center; padding: 5px;">
+            <div style="display: flex; justify-content: center; align-items: center; padding: 0px;">
               <!-- 这里可以调整 e-charts 的宽高 -->
               <e-charts class="chart" :option="option" :style="{ width: '1000px', height: '700px' }" @click="handleChartClick"></e-charts>
             </div>
 
             <!-- 显示点击类别的学生列表 -->
-            <div v-if="selectedCategory" style="padding: 5px;">
+            <div v-if="selectedCategory" style="padding: 0px;">
               <h3>{{ selectedCategory }} 学生列表</h3>
               <el-table :data="studentsForCategory" style="width: 100%">
-                <el-table-column prop="name" label="学生姓名"></el-table-column>
-                <el-table-column prop="id" label="学号"></el-table-column>
-                <el-table-column prop="major" label="专业" ></el-table-column>
-                <el-table-column prop="credits" label="所差学分" ></el-table-column>
+                 <el-table-column prop="name" label="学生姓名"></el-table-column>
+                 <el-table-column prop="id" label="学号"></el-table-column>
+                 <el-table-column prop="major" label="专业"></el-table-column>
+                 <el-table-column prop="credits" label="所差学分"></el-table-column>
+                 <!-- 仅在选中的类别是文化素质学分时显示 MOOC 列 -->
+                 <el-table-column
+                   v-if="showMoocColumn"
+                   prop="mooc"
+                   label="慕课情况">
+                 </el-table-column>
               </el-table>
+              
             </div>
               <template #footer>
                 <div class="dialog-footer">
@@ -206,145 +213,116 @@ const loading = ref(true);
 // 表格数据
 const student_data=ref([
   {
-    "autumn_core_credits":{
-      value:0.0,
-      isOk:false
+        
+        "autumn_required_credits": 54.0,
+        "core_credits": 13.0,
+        "culture_choose_credits": 1.5,
+        "culture_core_credits": 4.0,
+        "elective_credits": 6.5,
+        "innovation_credits": 6.0,
+        "international_credits": 4.0,
+        "limited_credits": 4.0,
+        "major": "计软网信物人医",
+        "numerical_logic_credits": 3.0,
+        "outmajor_credits": 0.0,
+        "short_term_training_credits": 0.0,
+        "spring_required_credits": 43.0,
+        "student_id": "114514",
+        "student_name": "2333",
+        "MOOC": [
+            1.0,
+            3.0,
+            1.5,
+            2.5,
+            2.0
+        ],
     },
-    
-    "autumn_limited_credits": {
-      value:0.0,
-      isOk:false
-    },
-    "autumn_required_credits":{
-      value:59.0,
-      isOk:false
-    },
-    "culture_choose_credits": {
-      value:5.5,
-      isOk:false
-    },
-    "culture_core_credits": {
-      value:5.0,
-      isOk:false
-    },
-    "culture_total_credits": {
-      value:11.5,
-      isOk:false
-    },
-    "elective_credits": {
-      value:10.0,
-      isOk:false,
-    },
-    // "id": 108,
-    "student_id":202216545,
-    "innovation_credits": {
-      value:3.0,
-      isOk:false
-    },
-    "international_credits": {
-      value:1.0,
-      isOk:false
-    },
-    "major": "未命名专业",
-    "numerical_logic_credits": {
-      value:3.0,
-      isOk:false
-    },
-    "outmajor_credits": {
-      value:7.0,
-      isOk:false
-    },
-    "short_term_training_credits": {
-      value:2.0,
-      isOk:false
-    },
-    "spring_core_credits": {
-      value:0.0,
-      isOk:false
-    },
-    "spring_limited_credits": {
-      value:4.0,
-      isOk:false
-    },
-    "spring_required_credits": {
-      value:0.0,
-      isOk:false
-    },
-    "student_name": "大数据1"
-  }
 ])
+
+// 通用的 formatter 函数,用于处理mooc和其他属性渲染的问题
+const formatCell = (row, type) => {
+  const cell = row[type];
+  if (Array.isArray(cell)) {
+    return cell.join(', ');
+  } else if (cell && typeof cell === 'object' && 'value' in cell) {
+    return cell.value;
+  } else {
+    return cell;
+  }
+};
+
 
 //数据转化处理函数
 // 定义一个处理函数，将 res.data 转换为所需格式
-function processStudentData(data) {
-  return data.map(item => ({
-    autumn_core_credits: {
-      value: item.autumn_core_credits,
-      isOk: true
-    },
-    autumn_limited_credits: {
-      value: item.autumn_limited_credits,
-      isOk: false
-    },
-    autumn_required_credits: {
-      value: item.autumn_required_credits,
-      isOk: true
-    },
-    culture_choose_credits: {
-      value: item.culture_choose_credits,
-      isOk: false
-    },
-    culture_core_credits: {
-      value: item.culture_core_credits,
-      isOk: true
-    },
-    culture_total_credits: {
-      value: item.culture_total_credits,
-      isOk: false
-    },
-    elective_credits: {
-      value: item.elective_credits,
-      isOk: true
-    },
-    // id: item.id,
-    student_id: item.student_id,  // 如果需要的话，可以从 API 返回的数据中添加 student_id
-    innovation_credits: {
-      value: item.innovation_credits,
-      isOk: false
-    },
-    international_credits: {
-      value: item.international_credits,
-      isOk: true
-    },
-    major: item.major,
-    numerical_logic_credits: {
-      value: item.numerical_logic_credits,
-      isOk: false
-    },
-    outmajor_credits: {
-      value: item.outmajor_credits,
-      isOk: false
-    },
-    short_term_training_credits: {
-      value: item.short_term_training_credits,
-      isOk: false
-    },
-    spring_core_credits: {
-      value: item.spring_core_credits,
-      isOk: false
-    },
-    spring_limited_credits: {
-      value: item.spring_limited_credits,
-      isOk: false
-    },
-    spring_required_credits: {
-      value: item.spring_required_credits,
-      isOk: false
-    },
-    student_name: item.student_name,
-    // student_id:item.student_id
-  }))
-}
+// function processStudentData(data) {
+//   return data.map(item => ({
+//     core_credits: {
+//       value: item.core_credits,
+//       isOk: true
+//     },
+//     limited_credits: {
+//       value: item.limited_credits,
+//       isOk: false
+//     },
+//     autumn_required_credits: {
+//       value: item.autumn_required_credits,
+//       isOk: true
+//     },
+//     culture_choose_credits: {
+//       value: item.culture_choose_credits,
+//       isOk: false
+//     },
+//     culture_core_credits: {
+//       value: item.culture_core_credits,
+//       isOk: true
+//     },
+//     culture_total_credits: {
+//       value: item.culture_total_credits,
+//       isOk: false
+//     },
+//     elective_credits: {
+//       value: item.elective_credits,
+//       isOk: true
+//     },
+//     // id: item.id,
+//     student_id: item.student_id,  // 如果需要的话，可以从 API 返回的数据中添加 student_id
+//     innovation_credits: {
+//       value: item.innovation_credits,
+//       isOk: false
+//     },
+//     international_credits: {
+//       value: item.international_credits,
+//       isOk: true
+//     },
+//     major: item.major,
+//     numerical_logic_credits: {
+//       value: item.numerical_logic_credits,
+//       isOk: false
+//     },
+//     outmajor_credits: {
+//       value: item.outmajor_credits,
+//       isOk: false
+//     },
+//     short_term_training_credits: {
+//       value: item.short_term_training_credits,
+//       isOk: false
+//     },
+//     spring_core_credits: {
+//       value: item.spring_core_credits,
+//       isOk: false
+//     },
+//     spring_limited_credits: {
+//       value: item.spring_limited_credits,
+//       isOk: false
+//     },
+//     spring_required_credits: {
+//       value: item.spring_required_credits,
+//       isOk: false
+//     },
+//     student_name: item.student_name,
+//     // student_id:item.student_id
+//   }))
+// }
 
 
 // 获取数据
@@ -352,7 +330,8 @@ const getTableData = () => {
   axios.get(url + '/data')
     .then(res => {
       console.log(res);
-      student_data.value=processStudentData(res.data)
+      // student_data.value=processStudentData(res.data)
+      student_data.value=res.data
       console.log("所有学生的数据:",student_data.value)
       loading.value=false
     }).catch((error) => {
@@ -369,29 +348,26 @@ const SelectForm=ref({
 })
 // const typeSelected=ref([])
 const typeArr=ref([
+
   {
     label:'春季必修',
     value:"spring_required_credits"
-  },
-  {
-    label:'春季限选',
-    value:"spring_limited_credits"
-  },
-  {
-    label:'春季核心',
-    value:"spring_core_credits"
   },
   {
     label:"秋季必修",
     value:"autumn_required_credits"
   },
   {
-    label:"秋季限选",
-    value:"autumn_limited_credits"
+    label:'专业限选',
+    value:"limited_credits"
   },
   {
-    label:"秋季核心",
-    value:"autumn_core_credits"
+    label:'专业核心',
+    value:"core_credits"
+  },
+  {
+    label:"专业选修",
+    value:"elective_credits"
   },
   {
     label:"企业短期实训",
@@ -413,10 +389,7 @@ const typeArr=ref([
     label:"创新学分",
     value:"innovation_credits"
   },
-  {
-    label:"专业选修",
-    value:"elective_credits"
-  },
+  
   {
     label:"文化素质选修",
     value:"culture_choose_credits"
@@ -426,9 +399,9 @@ const typeArr=ref([
     value:"culture_core_credits"
   },
   {
-    label:"文化素质总分",
-    value:"culture_total_credits"
-  }
+    label:'慕课',
+    value:"MOOC"
+  },
 ])
 onMounted(() => {
   console.log("标准数据",courseTemplate)
@@ -441,11 +414,11 @@ onMounted(() => {
 // 根据单元格值设置红色背景
 const creditColumns =new Set([
   'spring_required_credits',
-  'spring_limited_credits',
-  'spring_core_credits',
+  'limited_credits',
+  'core_credits',
   'autumn_required_credits', 
-  'autumn_limited_credits', 
-  'autumn_core_credits', 
+  // 'autumn_limited_credits', 
+  // 'autumn_core_credits', 
   'short_term_training_credits',
   'outmajor_credits',
   'numerical_logic_credits',
@@ -454,12 +427,12 @@ const creditColumns =new Set([
   'elective_credits',
   'culture_choose_credits',
   'culture_core_credits',
-  'culture_total_credits'
+  // 'culture_total_credits'
 ]);
 const cellStyle = ({ row, column }) => {
   // 更新列名以匹配包含 .value 的属性
   // 使用 column.property 检查是否在 creditColumns 中
-  if (creditColumns.has(column.property) && row[column.property]?.value < 0) {
+  if (creditColumns.has(column.property) && row[column.property] < 0) {
     return { backgroundColor: '#ffcccc', color: '#d9534f' };
   }
   return {};
@@ -509,8 +482,8 @@ const handleRowClick = (row) => {
 
     // 遍历 studata.value 的每个属性
     for (const [key, value] of Object.entries(studata.value)) {
-        if (key === 'spring_limited_credits' || key == 'spring_required_credits' || key === 'spring_core_credits'||
-            key === 'autumn_limited_credits' || key == 'autumn_required_credits' || key === 'autumn_core_credits' && value.value <0) {
+        if (key === 'imited_credits' || key == 'spring_required_credits' || key === 'core_credits'||
+            key == 'autumn_required_credits' && value.value <0) {
             // 如果 isOk 为 false，添加到 course_type 数组中
             dataToSend.course_type.push(key);
         }
@@ -737,14 +710,17 @@ const filteredStudentData = computed(() => {
   }
 
   //根据是否选择“只看缺少学分筛选”
-  if(isLackCredit.value) {
+  // 根据是否选择“只看缺少学分筛选”
+  if (isLackCredit.value) {
     filteredData = filteredData.filter((student) => {
       // 检查学生的每个学分字段，是否有未达标的学分
-      return Object.values(student).some((credit) => {
-        return typeof credit === "object" && credit.value<0;
+      return Object.entries(student).some(([key, value]) => {
+        // 筛选出学分字段（以 _credits 结尾），并判断值是否小于 0
+        return key.endsWith('_credits') && typeof value === 'number' && value < 0;
       });
     });
   }
+
   // 更新筛选人数
   filteredCount.value = filteredData.length;
   return filteredData;
@@ -829,8 +805,8 @@ const centerDialogVisible = ref(false)
 
 //计算各类学分未修满的学生数量
 const creditCategories = [
-  'spring_required_credits', 'spring_limited_credits', 'spring_core_credits',
-  'autumn_required_credits', 'autumn_limited_credits', 'autumn_core_credits',
+  'spring_required_credits', 'limited_credits', 'core_credits',
+  'autumn_required_credits', 
   'short_term_training_credits', 'outmajor_credits', 'numerical_logic_credits',
   'international_credits', 'innovation_credits', 'elective_credits',
   'culture_choose_credits', 'culture_core_credits', 'culture_total_credits'
@@ -838,12 +814,10 @@ const creditCategories = [
 //增加映射
 const creditCategoryNames = {
   'spring_required_credits': '春季必修学分',
-  'spring_limited_credits': '春季限选学分',
-  'spring_core_credits': '春季核心学分',
+  'limited_credits': '专业限选学分',
+  'core_credits': '专业核心学分',
   'autumn_required_credits': '秋季必修学分',
-  'autumn_limited_credits': '秋季限选学分',
-  'autumn_core_credits': '秋季核心学分',
-  'short_term_training_credits': '短期培训学分',
+  'short_term_training_credits': '企业实训实践学分',
   'outmajor_credits': '跨专业学分',
   'numerical_logic_credits': '数字逻辑学分',
   'international_credits': '国际化学分',
@@ -851,14 +825,14 @@ const creditCategoryNames = {
   'elective_credits': '专业选修学分',
   'culture_choose_credits': '文化素质选修学分',
   'culture_core_credits': '文化素质核心学分',
-  'culture_total_credits': '文化素质总学分'
+  // 'culture_total_credits': '文化素质总学分'
 };
 
 // 计算未修满学分的学生数量，使用中文名称
 const missingCreditData = computed(() => {
   const result = creditCategories.map(category => {
     const count = student_data.value.filter(student => {
-      return student[category]?.value < 0; // 如果学分 <= 0，表示未修满
+      return student[category]< 0; // 如果学分 <= 0，表示未修满
     }).length;
 
     return {
@@ -873,10 +847,11 @@ const missingCreditData = computed(() => {
 // 记录选中的学分类别和对应的学生列表
 const selectedCategory = ref(null);
 const studentsForCategory = ref([]);
+const showMoocColumn = ref(false); // 默认不显示 MOOC 列
 
 // 点击饼图时触发的事件
 const handleChartClick = (params) => {
-  const categoryNameInChinese = params.name;  // 获取点击的中文类别名称
+  const categoryNameInChinese = params.name; // 获取点击的中文类别名称
   console.log("categoryNameInChinese is ", categoryNameInChinese);
 
   // 根据中文名称查找对应的英文名称
@@ -887,20 +862,27 @@ const handleChartClick = (params) => {
   if (categoryNameInEnglish) {
     selectedCategory.value = categoryNameInChinese;
 
+    // 判断是否是“文化素质选修学分”或“文化素质核心学分”
+    showMoocColumn.value =
+      categoryNameInChinese === '文化素质选修学分' ||
+      categoryNameInChinese === '文化素质核心学分';
+
     // 获取该类别下未修满学分的学生
     const students = student_data.value.filter(student => {
-      return student[categoryNameInEnglish]?.value < 0; // 根据英文名称进行筛选
+      return student[categoryNameInEnglish] < 0; // 根据英文名称进行筛选
     });
 
     // 存储未修满学分的学生数据
     studentsForCategory.value = students.map(student => ({
       name: student.student_name,
       id: student.student_id,
-      credits: student[categoryNameInEnglish].value,
-      major:student.major
+      credits: student[categoryNameInEnglish],
+      major: student.major,
+      mooc: student.MOOC
     }));
   }
 };
+
 
 
 //echarts配置
