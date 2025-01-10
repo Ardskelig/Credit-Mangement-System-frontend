@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <div>
+    
         <el-card class="cardStyle" v-loading="loading" > 
 
           <!-- 上方功能按钮部分 -->
@@ -87,7 +87,7 @@
 
             <!-- 是否导出为excel提示窗 -->
             <el-dialog v-model="IfExport" title="消息提示" width="800">
-              确定要将目前删选的表格导出为excel？
+              确定要将目前筛选的表格导出为excel？
               <template #footer>
                 <div class="dialog-footer">
                   <el-button @click="IfExport = false">取消</el-button>
@@ -141,6 +141,7 @@
               width="65%"
               destroy-on-close
             >
+            <p>文化素质总分部分没有扣除分数，请到表格部分查看</p>
             <div style="display: flex; justify-content: center; align-items: center; padding: 0px;">
               <!-- 这里可以调整 e-charts 的宽高 -->
               <e-charts class="chart" :option="option" :style="{ width: '1000px', height: '700px' }" @click="handleChartClick"></e-charts>
@@ -149,17 +150,18 @@
             <!-- 显示点击类别的学生列表 -->
             <div v-if="selectedCategory" style="padding: 0px;">
               <h3>{{ selectedCategory }} 学生列表</h3>
-              <el-table :data="studentsForCategory" style="width: 100%">
+              <el-table :data="studentsForCategory" style="width: 100%" >
+                <el-table-column type="index" label="序号" width="60"></el-table-column>
                  <el-table-column prop="name" label="学生姓名"></el-table-column>
                  <el-table-column prop="id" label="学号"></el-table-column>
                  <el-table-column prop="major" label="专业"></el-table-column>
                  <el-table-column prop="credits" label="所差学分"></el-table-column>
                  <!-- 仅在选中的类别是文化素质学分时显示 MOOC 列 -->
-                 <el-table-column
+                 <!-- <el-table-column
                    v-if="showMoocColumn"
                    prop="mooc"
                    label="慕课情况">
-                 </el-table-column>
+                 </el-table-column> -->
               </el-table>
               
             </div>
@@ -181,7 +183,7 @@
         @change="handleFileUpload"
         multiple
       />
-    </div>
+    
   </div>
 </template>
 
@@ -214,28 +216,31 @@ const loading = ref(true);
 const student_data=ref([
   {
         
-        "autumn_required_credits": 54.0,
-        "core_credits": 13.0,
-        "culture_choose_credits": 1.5,
-        "culture_core_credits": 4.0,
-        "elective_credits": 6.5,
-        "innovation_credits": 6.0,
-        "international_credits": 4.0,
-        "limited_credits": 4.0,
-        "major": "计软网信物人医",
-        "numerical_logic_credits": 3.0,
-        "outmajor_credits": 0.0,
-        "short_term_training_credits": 0.0,
-        "spring_required_credits": 43.0,
-        "student_id": "114514",
-        "student_name": "2333",
-        "MOOC": [
-            1.0,
-            3.0,
-            1.5,
-            2.5,
-            2.0
-        ],
+        // "autumn_required_credits": 54.0,
+      "core_credits": 13.0,
+      "culture_choose_credits": 1.5,
+      "culture_core_credits": 4.0,
+      "culture_mooc_total_credits":8.0,//文化选修总分
+        // "total_culture_credits":8.0,//文化选修总分
+      "elective_credits": 6.5,
+      "innovation_credits": 6.0,
+      "international_credits": 4.0,
+      "limited_credits": 4.0,
+      "major": "计软网信物人医",
+      "numerical_logic_credits": 3.0,
+      "outmajor_credits": 0.0,
+      "short_term_training_credits": 0.0,
+        // "spring_required_credits": 43.0,
+      "total_required_credits": 97.0,//必修课总学分
+      "student_id": "114514",
+      "student_name": "2333",
+        // "MOOC": [
+        //     1.0,
+        //     3.0,
+        //     1.5,
+        //     2.5,
+        //     2.0
+        // ],
     },
 ])
 
@@ -349,13 +354,17 @@ const SelectForm=ref({
 // const typeSelected=ref([])
 const typeArr=ref([
 
+  // {
+  //   label:'春季必修',
+  //   value:"spring_required_credits"
+  // },
+  // {
+  //   label:"秋季必修",
+  //   value:"autumn_required_credits"
+  // },
   {
-    label:'春季必修',
-    value:"spring_required_credits"
-  },
-  {
-    label:"秋季必修",
-    value:"autumn_required_credits"
+    label:'必修总学分',
+    value:"total_required_credits"
   },
   {
     label:'专业限选',
@@ -399,9 +408,13 @@ const typeArr=ref([
     value:"culture_core_credits"
   },
   {
-    label:'慕课',
-    value:"MOOC"
+    label:"文化选修总学分(含mooc)",
+    value:"culture_mooc_total_credits"
   },
+  // {
+  //   label:'慕课',
+  //   value:"MOOC"
+  // },
 ])
 onMounted(() => {
   console.log("标准数据",courseTemplate)
@@ -413,10 +426,11 @@ onMounted(() => {
 
 // 根据单元格值设置红色背景
 const creditColumns =new Set([
-  'spring_required_credits',
+  // 'spring_required_credits',
   'limited_credits',
   'core_credits',
-  'autumn_required_credits', 
+  'total_required_credits',//必修课总学分
+  // 'autumn_required_credits', 
   // 'autumn_limited_credits', 
   // 'autumn_core_credits', 
   'short_term_training_credits',
@@ -427,7 +441,7 @@ const creditColumns =new Set([
   'elective_credits',
   'culture_choose_credits',
   'culture_core_credits',
-  // 'culture_total_credits'
+  'culture_mooc_total_credits'//文化选修总分，含有mooc
 ]);
 const cellStyle = ({ row, column }) => {
   // 更新列名以匹配包含 .value 的属性
@@ -443,27 +457,19 @@ const studata=ref({})//具体信息显示部分，之后绑定axios发送请求�
 const missingCourses=ref({
 "专业必修课": [ 
   "军事技能", 
-  "形势与政策(3)", 
-  "操作系统", 
-  "数据库系统", 
-  "毕业设计（论文）", 
-  "算法设计与分析", 
-  "编译原理", 
-  "计算机系统", 
-  "计算机网络", 
-  "软件工程" ],
+   ],
 
   "专业核心课": [ 
-  "处理器设计与实践", 
-  "计算机体系结构A", 
-  "计算机科学/计算机工程专业方向实践", 
-  "计算系统设计与实现" 
+  "处理器设计与实践",  
+  ],
+  "软工商务类课程":[
+    "未满足要求"
   ]
 })
 const size = ref('medium'); // 可根据需要修改尺寸
 const blockMargin = { margin: '20px 0' };
 const dialogTableVisible=ref(false)
-//处理点击，然后发送数据
+//处理表格中的点击，然后发送数据,
 const handleRowClick = (row) => {
     dialogTableVisible.value = true;
     console.log(row);
@@ -482,7 +488,42 @@ const handleRowClick = (row) => {
 
     // 遍历 studata.value 的每个属性
     for (const [key, value] of Object.entries(studata.value)) {
-        if (key === 'imited_credits' || key == 'spring_required_credits' || key === 'core_credits'||
+      //如果是专业限选、专业必修课学分
+        if ((key === 'limited_credits' && value <0) || (key == 'total_required_credits' && value <0)||
+            (key == 'outmajor_credits' && value <0)) {
+            // 如果 isOk 为 false，添加到 course_type 数组中
+            dataToSend.course_type.push(key);
+        }
+    }
+
+    console.log("需要发送的数据如下:", dataToSend);
+
+    // 如果有需要发送的数据，调用发送函数
+    if (dataToSend.course_type.length > 0) {
+        sendDataToBackend(dataToSend);
+    }
+};
+
+//处理echarts中的表格点击，查看详细信息
+const handleRowClick2 = (row) => {
+    dialogTableVisible.value = true;
+    console.log(row);
+    studata.value = row;
+
+    // 提取 student_name, student_id, major
+    const { name, id, major } = studata.value;
+
+    // 生成要发送的数据 
+    const dataToSend = { 
+        name, 
+        id,
+        major,
+        course_type: [] // 用于存储 isOk 为 false 的学分名
+    };
+
+    // 遍历 studata.value 的每个属性
+    for (const [key, value] of Object.entries(studata.value)) {
+        if (key === 'limited_credits' || key == 'spring_required_credits' || key === 'core_credits'||
             key == 'autumn_required_credits' && value.value <0) {
             // 如果 isOk 为 false，添加到 course_type 数组中
             dataToSend.course_type.push(key);
@@ -497,10 +538,12 @@ const handleRowClick = (row) => {
     }
 };
 
+
 // 发送数据到后端的函数
 const sendDataToBackend = async (data) => {
+  console.log('***************************')
     try {
-        const response = await axios.post(url+'/check_missing_courses', data); // 更改为你的后端接口
+        const response = await axios.post(url+'/check_missing_courses', data); 
         console.log('数据发送成功:', response.data);
         missingCourses.value=response.data
         ElMessage({
@@ -783,20 +826,55 @@ const buttonclick=()=>{
 
 //5.将目前显示的表导出为excel
 const IfExport=ref(false)
-const exportToExcel=()=>{
-    IfExport.value=false
-    console.log("确认导出excel")
-    if (filteredStudentData.value.length === 0) {
-      alert('没有可导出的数据');
-      return;
+const exportToExcel = () => {
+  IfExport.value = false;
+  console.log("确认导出excel");
+
+  // 检查数据是否为空
+  if (student_data.value.length === 0) {
+    ElMessage({
+      message: '没有可导出的数据!',
+      type: 'warning',
+    });
+    return;
+  }
+
+  // 格式化导出数据，优先添加学生信息字段
+  const formattedData = filteredStudentData.value.map(item => {
+    const formattedItem = {
+      '学生姓名': item.student_name,
+      '学号': item.student_id,
+      '专业': item.major,
+    };
+
+    // 添加其他字段，按照映射名
+    for (const [key, value] of Object.entries(item)) {
+      // 跳过已固定的字段
+      if (key === 'student_name' || key === 'student_id' || key === 'major') continue;
+
+      // 如果字段有映射，使用映射后的列名；否则保留原字段名
+      formattedItem[creditCategoryNames[key] || key] = value;
     }
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(filteredStudentData.value);
-    XLSX.utils.book_append_sheet(workbook, worksheet, '筛选数据');
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
-    saveAs(blob, '筛选数据.xlsx');
-}
+
+    return formattedItem;
+  });
+
+  // 创建 Excel 工作簿和表单
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.json_to_sheet(formattedData);
+  XLSX.utils.book_append_sheet(workbook, worksheet, '筛选数据');
+
+  // 生成并下载 Excel 文件
+  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+  saveAs(blob, '筛选数据.xlsx');
+  ElMessage({
+      message: '导出成功，请查看下载',
+      type: 'success',
+    });
+};
+
+
 
 
 //6.显示echarts统计表
@@ -805,18 +883,28 @@ const centerDialogVisible = ref(false)
 
 //计算各类学分未修满的学生数量
 const creditCategories = [
-  'spring_required_credits', 'limited_credits', 'core_credits',
-  'autumn_required_credits', 
-  'short_term_training_credits', 'outmajor_credits', 'numerical_logic_credits',
-  'international_credits', 'innovation_credits', 'elective_credits',
-  'culture_choose_credits', 'culture_core_credits', 'culture_total_credits'
+  // 'spring_required_credits', 
+  'limited_credits', 
+  'core_credits',
+  // 'autumn_required_credits', 
+  'total_required_credits',
+  'short_term_training_credits', 
+  'outmajor_credits', 
+  'numerical_logic_credits',
+  'international_credits', 
+  'innovation_credits', 
+  'elective_credits',
+  'culture_choose_credits', 
+  'culture_core_credits', 
+  'culture_mooc_credits'
 ];
 //增加映射
 const creditCategoryNames = {
-  'spring_required_credits': '春季必修学分',
+  // 'spring_required_credits': '春季必修学分',
   'limited_credits': '专业限选学分',
   'core_credits': '专业核心学分',
-  'autumn_required_credits': '秋季必修学分',
+  // 'autumn_required_credits': '秋季必修学分',
+  'total_required_credits': '必修总学分',
   'short_term_training_credits': '企业实训实践学分',
   'outmajor_credits': '跨专业学分',
   'numerical_logic_credits': '数字逻辑学分',
@@ -825,7 +913,10 @@ const creditCategoryNames = {
   'elective_credits': '专业选修学分',
   'culture_choose_credits': '文化素质选修学分',
   'culture_core_credits': '文化素质核心学分',
-  // 'culture_total_credits': '文化素质总学分'
+  'culture_mooc_total_credits': '文化素质总学分',
+  'major':'专业',
+  'student_name':'学生姓名',
+  'student_id':'学号'
 };
 
 // 计算未修满学分的学生数量，使用中文名称
@@ -878,7 +969,6 @@ const handleChartClick = (params) => {
       id: student.student_id,
       credits: student[categoryNameInEnglish],
       major: student.major,
-      mooc: student.MOOC
     }));
   }
 };
