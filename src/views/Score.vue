@@ -1044,7 +1044,7 @@ watch(centerDialogVisible, (newVal) => {
 .container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 92vh;
   padding: 10px;
   box-sizing: border-box;
 }
