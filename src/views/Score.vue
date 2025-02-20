@@ -48,10 +48,10 @@
             <!-- 改为动态渲染 -->
              
           <el-table 
-                :data="filteredStudentData" 
+                :data="paginatedData" 
                 border  
                 style="width: 100%" 
-                height="800px" 
+                height="100%" 
                 stripe
                 :cell-style="cellStyle"
                 @row-click="handleRowClick"
@@ -78,12 +78,27 @@
                     <el-input v-model="searchQuery" placeholder="搜索姓名或学号" />
                   </template>
                   <template #default="scope">
-                    <el-button type="primary" @click="handleRowClick(scope.row)">
+                    <el-button type="primary" >
                       查看详情
                     </el-button>
                   </template>
                 </el-table-column>
             </el-table>
+
+            <!-- 在el-table标签下方添加 -->
+            <div class="pagination-container">
+              <el-pagination
+                background
+                layout="total, sizes, prev, pager, next"
+                :current-page="currentPage"
+                :page-size="pageSize"
+                :page-sizes="[10, 20, 50, 100]"
+                :total="total"
+                @current-change="handleCurrentChange"
+                @size-change="handleSizeChange"
+              />
+            </div>
+
 
             <!-- 是否导出为excel提示窗 -->
             <el-dialog v-model="IfExport" title="消息提示" width="800">
@@ -205,7 +220,7 @@ import * as echarts from 'echarts';
 // import PieChart from '@/components/charts.vue';
 
 const isLackCredit = ref(false)//开关，是否只看差学分的学生
-const filteredCount=ref(0)//计算当前筛选结果的总数
+// const filteredCount=ref(0)//计算当前筛选结果的总数
 
 const url = "http://127.0.0.1:5000";
 const loading = ref(true);
@@ -707,67 +722,166 @@ const cancelAllMajor=()=>{
 //3.搜索功能
 // 搜索关键字
 const searchQuery = ref("");
-// 计算属性：根据搜索关键字过滤数据
-const filteredStudentData = computed(() => {
-  // 如果没有搜索关键字，显示所有数据
-  let filteredData = student_data.value;
+// 计算属性：根据搜索关键字过滤数据,优化，拆分计算属性
+// const filteredStudentData = computed(() => {
+//   // 如果没有搜索关键字，显示所有数据
+//   let filteredData = student_data.value;
 
-  // 过滤逻辑：根据姓名或学号包含搜索关键字
-  if (searchQuery.value) {
-    filteredData = filteredData.filter((student) => {
-      return (
-        student.student_name.includes(searchQuery.value) ||
-        student.student_id.toString().includes(searchQuery.value)
-      );
-    });
-  }
+//   // 过滤逻辑：根据姓名或学号包含搜索关键字
+//   if (searchQuery.value) {
+//     filteredData = filteredData.filter((student) => {
+//       return (
+//         student.student_name.includes(searchQuery.value) ||
+//         student.student_id.toString().includes(searchQuery.value)
+//       );
+//     });
+//   }
 
-  // 根据 SelectForm 进行筛选
-  if (SelectForm.value.typeSelected.length > 0) {
-    filteredData = filteredData.map((student) => {
-      // 只保留选中的学分字段
-      let filteredStudent = {
-        student_name: student.student_name,
-        student_id: student.student_id,
-        major: student.major,
-      };
+//   // 根据 SelectForm 进行筛选
+//   if (SelectForm.value.typeSelected.length > 0) {
+//     filteredData = filteredData.map((student) => {
+//       // 只保留选中的学分字段
+//       let filteredStudent = {
+//         student_name: student.student_name,
+//         student_id: student.student_id,
+//         major: student.major,
+//       };
 
-      SelectForm.value.typeSelected.forEach((type) => {
-        // 确保该字段存在于学生对象中
-        if (type in student) {
-          filteredStudent[type] = student[type]; // 直接添加整个学分对象
-        }
-      });
-      // console.log("打印出来最终的筛选结果：",filteredStudent)
-      return filteredStudent;
+//       SelectForm.value.typeSelected.forEach((type) => {
+//         // 确保该字段存在于学生对象中
+//         if (type in student) {
+//           filteredStudent[type] = student[type]; // 直接添加整个学分对象
+//         }
+//       });
+//       // console.log("打印出来最终的筛选结果：",filteredStudent)
+//       return filteredStudent;
       
-    });
+//     });
+//   }
+
+
+//   // 根据专业进行筛选
+//   if (SelectForm.value.majors.length > 0) {
+//     filteredData = filteredData.filter((student) => {
+//       return SelectForm.value.majors.includes(student.major); // 只保留所选专业的学生
+//     });
+//   }
+
+//   //根据是否选择“只看缺少学分筛选”
+//   // 根据是否选择“只看缺少学分筛选”
+//   if (isLackCredit.value) {
+//     filteredData = filteredData.filter((student) => {
+//       // 检查学生的每个学分字段，是否有未达标的学分
+//       return Object.entries(student).some(([key, value]) => {
+//         // 筛选出学分字段（以 _credits 结尾），并判断值是否小于 0
+//         return key.endsWith('_credits') && typeof value === 'number' && value < 0;
+//       });
+//     });
+//   }
+
+//   // 更新筛选人数
+//   filteredCount.value = filteredData.length;
+//   return filteredData;
+// });
+
+
+//拆分1：姓名学号过滤
+const filteredBySearch=computed(()=>{
+  if(!searchQuery.value.trim()){
+    return student_data.value
+  }else{
+    return student_data.value.filter((student)=>{
+      return (
+        student.student_name.includes(searchQuery.value)||student.student_id.toString().includes(searchQuery.value)
+      )
+    })
+  }
+})
+
+//拆分2：根据筛选字段进行过滤
+const filteredBySelectedFields = computed(() => {
+  // 保留原始数据引用
+  const sourceData = filteredBySearch.value
+  
+  // 没有类型选择时返回全部字段
+  if (SelectForm.value.typeSelected.length === 0) {
+    return sourceData.map(student => ({ ...student })) // 浅拷贝避免污染源数据
   }
 
+  // 动态过滤字段
+  return sourceData.map(student => {
+    const filteredStudent = {
+      student_name: student.student_name,
+      student_id: student.student_id,
+      major: student.major
+    }
 
-  // 根据专业进行筛选
-  if (SelectForm.value.majors.length > 0) {
-    filteredData = filteredData.filter((student) => {
-      return SelectForm.value.majors.includes(student.major); // 只保留所选专业的学生
-    });
-  }
+    // 安全遍历选择类型
+    SelectForm.value.typeSelected.forEach(type => {
+      if (Object.hasOwn(student, type)) {
+        filteredStudent[type] = student[type]
+      }
+    })
 
-  //根据是否选择“只看缺少学分筛选”
-  // 根据是否选择“只看缺少学分筛选”
+    return filteredStudent // 必须返回新对象
+  })
+})
+
+
+//拆分3：根据是否选择“缺少学分”进行过滤
+const filteredByLackOfCredit = computed(() => {
+  let filteredData = filteredBySelectedFields.value;
   if (isLackCredit.value) {
-    filteredData = filteredData.filter((student) => {
-      // 检查学生的每个学分字段，是否有未达标的学分
+    return filteredData.filter((student) => {
       return Object.entries(student).some(([key, value]) => {
-        // 筛选出学分字段（以 _credits 结尾），并判断值是否小于 0
         return key.endsWith('_credits') && typeof value === 'number' && value < 0;
       });
     });
   }
-
-  // 更新筛选人数
-  filteredCount.value = filteredData.length;
   return filteredData;
 });
+
+// 最终过滤后的数据
+const filteredStudentData = computed(() => {
+  return filteredByLackOfCredit.value;
+});
+
+// 更新筛选结果的学生人数
+const filteredCount = computed(() => {
+  console.log('*********************',filteredStudentData)
+  return filteredStudentData.value.length;
+});
+
+
+//增加分页功能
+const currentPage=ref(1)
+const pageSize=ref(20)
+const total=computed(()=>filteredStudentData.value.length)
+// 计算分页后的数据
+const paginatedData = computed(() => {
+  return filteredStudentData.value.slice(
+    (currentPage.value - 1) * pageSize.value,
+    currentPage.value * pageSize.value
+  )
+})
+
+// 监听数据变化时重置页码
+watch(filteredStudentData, () => {
+  currentPage.value = 1
+})
+
+// 分页事件处理
+const handleCurrentChange = (val) => {
+  currentPage.value = val
+}
+
+const handleSizeChange = (val) => {
+  pageSize.value = val
+  currentPage.value = 1
+}
+
+
+
 
 
 //4.删除功能
@@ -896,7 +1010,8 @@ const creditCategories = [
   'elective_credits',
   'culture_choose_credits', 
   'culture_core_credits', 
-  'culture_mooc_credits'
+  'culture_mooc_credits',
+  'culture_mooc_total_credits'
 ];
 //增加映射
 const creditCategoryNames = {
@@ -1042,16 +1157,17 @@ watch(centerDialogVisible, (newVal) => {
 
 <style scoped>
 .container {
-  display: flex;
+  /* display: flex; */
   flex-direction: column;
   height: 92vh;
   padding: 10px;
   box-sizing: border-box;
 }
 
-.cardStyle {
-  height: 100%;
-  margin: 5px;
-  padding: 10px 10px 10px 10px;
+.pagination-container {
+  margin-top: 15px;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

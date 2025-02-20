@@ -35,16 +35,6 @@ import Header from '../common/header.vue'
       padding: 0;
       margin: 0;
     }
-    .asideWidth {
-      /*background-image: linear-gradient(rgba(90,139,255,1), white);*/
-      border-right: 1px solid #e6e6e6;
-      width: 240px;
-      transition: 0.2s;
-      height: 100%
-    }
-    .el-card__body {
-      padding: 0;
-    }
     .copyright {
       position: absolute;
       left: 0;
